@@ -14,7 +14,7 @@ import spock.lang.Unroll
 import static io.micronaut.configuration.metrics.micrometer.MeterRegistryFactory.MICRONAUT_METRICS_BINDERS
 import static io.micronaut.configuration.metrics.micrometer.MeterRegistryFactory.MICRONAUT_METRICS_ENABLED
 
-class HikariDataSourcePoolMetadataCustomPoolSpec extends Specification {
+class HikariDataSourcePoolMetadataCustomPoolSpec extends AbstractDataSourcePoolMetadataSpec {
 
     @Shared
     @AutoCleanup
@@ -35,23 +35,18 @@ class HikariDataSourcePoolMetadataCustomPoolSpec extends Specification {
     @AutoCleanup
     RxHttpClient httpClient = context.createBean(RxHttpClient, embeddedServer.getURL())
 
-    def "check metrics endpoint for datasource metrics"() {
+    @Unroll
+    def "check metrics endpoint for datasource metrics for #metric"() {
         when:
         def response = httpClient.exchange("/metrics", Map).blockingFirst()
         Map result = response.body()
 
         then:
         response.code() == HttpStatus.OK.code
-        result.names.contains("hikaricp.connections.idle")
-        result.names.contains("hikaricp.connections.pending")
-        result.names.contains("hikaricp.connections")
-        result.names.contains("hikaricp.connections.active")
-        result.names.contains("hikaricp.connections.creation")
-        result.names.contains("hikaricp.connections.max")
-        result.names.contains("hikaricp.connections.min")
-        result.names.contains("hikaricp.connections.usage")
-        result.names.contains("hikaricp.connections.timeout")
-        result.names.contains("hikaricp.connections.acquire")
+        result.names.contains(metric)
+
+        where:
+        metric << metricNames
     }
 
     @Unroll
@@ -79,18 +74,7 @@ class HikariDataSourcePoolMetadataCustomPoolSpec extends Specification {
         }
 
         where:
-        metric << [
-                'hikaricp.connections.idle',
-                'hikaricp.connections.pending',
-                'hikaricp.connections',
-                'hikaricp.connections.active',
-                'hikaricp.connections.creation',
-                'hikaricp.connections.max',
-                'hikaricp.connections.min',
-                'hikaricp.connections.usage',
-                'hikaricp.connections.timeout',
-                'hikaricp.connections.acquire'
-        ]
+        metric << metricNames
     }
 
 

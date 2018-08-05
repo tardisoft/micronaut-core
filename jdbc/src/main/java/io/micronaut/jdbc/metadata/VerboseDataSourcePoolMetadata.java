@@ -17,20 +17,34 @@
 package io.micronaut.jdbc.metadata;
 
 /**
- * Provide a {@link DataSourcePoolMetadata} based on a {@link javax.sql.DataSource}.
+ * Provides access meta-data that is commonly available from most pooled
+ * {@link javax.sql.DataSource} implementations.
  *
- * @author Stephane Nicoll
+ * @param <T> datasource {@link javax.sql.DataSource}
  * @author Christian Oestreich
  * @since 2.0.0
  */
-@FunctionalInterface
-public interface DataSourcePoolMetadataProvider<T extends DataSourcePoolMetadata> {
+public interface VerboseDataSourcePoolMetadata<T extends javax.sql.DataSource> extends DataSourcePoolMetadata<T> {
 
     /**
-     * Return the {@link DataSourcePoolMetadata} instance able to manage the specified
-     * {@link javax.sql.DataSource} or {@code null} if the given data source could not be handled.
+     * Provide method to get the configured pool name.
      *
-     * @return the data source pool metadata
+     * @return Name of pool
      */
-    T getDataSourcePoolMetadata();
+    String getPoolName();
+
+    /**
+     * Get the number of pending connections
+     *
+     * @return Value of pending
+     */
+    Integer getPending();
+
+    /**
+     * Get the number of total connections
+     *
+     * @return Value of total
+     */
+    Integer getTotal();
+
 }

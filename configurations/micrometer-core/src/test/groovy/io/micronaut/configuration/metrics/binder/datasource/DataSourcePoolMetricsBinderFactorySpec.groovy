@@ -1,30 +1,27 @@
 package io.micronaut.configuration.metrics.binder.datasource
 
-import io.micrometer.core.instrument.MeterRegistry
-import spock.lang.Ignore
+import io.micronaut.jdbc.metadata.DataSourcePoolMetadata
 import spock.lang.Specification
 
 import javax.sql.DataSource
 
 class DataSourcePoolMetricsBinderFactorySpec extends Specification {
 
-    @Ignore
     def "test getting the beans manually"() {
         given:
-        def meterRegistry = Mock(MeterRegistry)
-        def dataSource1 = Mock(DataSource)
-        def dataSource2 = Mock(DataSource)
+        def dataSource1 = Mock(DataSourcePoolMetadata)
+        def dataSource2 = Mock(DataSourcePoolMetadata)
 
         when:
-        def binder = new DataSourcePoolMetricsBinderFactory([], meterRegistry)
+        def binder = new DataSourcePoolMetricsBinderFactory()
         binder.dataSourceMeterBinder("default", dataSource1)
         binder.dataSourceMeterBinder("first", dataSource2)
 
         then:
-        1 * dataSource2.hashCode() >> 1
-        1 * dataSource1.hashCode() >> 2
+        binder
+        1 * dataSource2.getDataSource() >> Mock(DataSource)
+        1 * dataSource1.getDataSource() >> Mock(DataSource)
         0 * _._
-
 
     }
 }

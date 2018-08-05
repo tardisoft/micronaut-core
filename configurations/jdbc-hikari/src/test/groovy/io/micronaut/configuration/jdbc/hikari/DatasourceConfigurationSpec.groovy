@@ -20,6 +20,7 @@ import io.micronaut.configuration.metrics.binder.datasource.DataSourcePoolMetric
 import io.micronaut.context.ApplicationContext
 import io.micronaut.context.DefaultApplicationContext
 import io.micronaut.context.env.MapPropertySource
+import io.micronaut.context.exceptions.NoSuchBeanException
 import io.micronaut.inject.qualifiers.Qualifiers
 import io.micronaut.jdbc.metadata.DataSourcePoolMetadata
 import spock.lang.Specification
@@ -58,6 +59,7 @@ class DatasourceConfigurationSpec extends Specification {
         expect:
         applicationContext.containsBean(DataSource)
         applicationContext.containsBean(DatasourceConfiguration)
+        applicationContext.containsBean(DataSourcePoolMetadata)
 
         when:
         HikariUrlDataSource dataSource = applicationContext.getBean(DataSource).targetDataSource
@@ -84,6 +86,7 @@ class DatasourceConfigurationSpec extends Specification {
         expect:
         applicationContext.containsBean(DataSource)
         applicationContext.containsBean(DatasourceConfiguration)
+        applicationContext.containsBean(DataSourcePoolMetadata)
 
         when:
         HikariDataSource dataSource = applicationContext.getBean(DataSource).targetDataSource
@@ -117,6 +120,7 @@ class DatasourceConfigurationSpec extends Specification {
         expect:
         applicationContext.containsBean(DataSource)
         applicationContext.containsBean(DatasourceConfiguration)
+        applicationContext.containsBean(DataSourcePoolMetadata)
 
         when:
         HikariDataSource dataSource = applicationContext.getBean(DataSource).targetDataSource
@@ -185,6 +189,15 @@ class DatasourceConfigurationSpec extends Specification {
         expect:
         applicationContext.getBeansOfType(DataSource).size() == 2
         applicationContext.getBeansOfType(DatasourceConfiguration).size() == 2
+        applicationContext.getBeansOfType(DataSourcePoolMetadata).size() == 2
+        applicationContext.getBean(DataSourcePoolMetadata, Qualifiers.byName("default"))
+        applicationContext.getBean(DataSourcePoolMetadata, Qualifiers.byName("foo"))
+
+        when:
+        applicationContext.getBean(DataSourcePoolMetadata, Qualifiers.byName("foo2"))
+
+        then:
+        thrown(NoSuchBeanException)
 
         when:
         dataSource = (HikariDataSource) applicationContext.getBean(DataSource, Qualifiers.byName("default")).targetDataSource
@@ -207,6 +220,51 @@ class DatasourceConfigurationSpec extends Specification {
         cleanup:
         applicationContext.close()
     }
+
+    void "test multiple datasources metadata props"() {
+        given:
+        ApplicationContext applicationContext = new DefaultApplicationContext("test")
+        applicationContext.environment.addPropertySource(MapPropertySource.of(
+                'test',
+                ['datasources.default': [:],
+                 'datasources.foo'    : [:]]
+        ))
+
+        when:
+        applicationContext.start()
+
+        then:
+        applicationContext.getBeansOfType(DataSource).size() == 2
+        applicationContext.getBeansOfType(DatasourceConfiguration).size() == 2
+        applicationContext.getBeansOfType(DataSourcePoolMetadata).size() == 2
+
+        when:
+        def defaultMetadata = applicationContext.getBean(DataSourcePoolMetadata, Qualifiers.byName("default"))
+        def fooMetadata = applicationContext.getBean(DataSourcePoolMetadata, Qualifiers.byName("foo"))
+
+        then: 'Check default metadta properties'
+        defaultMetadata.validationQuery == 'SELECT 1'
+        defaultMetadata.max == 10
+        defaultMetadata.min == 10
+        defaultMetadata.idle > 0
+        defaultMetadata.defaultAutoCommit
+        defaultMetadata.active == 0
+
+        and: 'Check foo metadta properties'
+        fooMetadata.validationQuery == 'SELECT 1'
+        fooMetadata.max == 10
+        fooMetadata.min == 10
+        fooMetadata.idle > 0
+        fooMetadata.defaultAutoCommit
+        fooMetadata.active == 0
+
+        and: 'Make sure the beans are unique'
+        fooMetadata != defaultMetadata
+
+        cleanup:
+        applicationContext.stop()
+    }
+
 
     void "test metrics disabled"() {
         given:

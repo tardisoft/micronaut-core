@@ -7,16 +7,12 @@ class AbstractDataSourcePoolMetadataSpec extends Specification {
 
     @Shared
     def metricNames = [
-    'hikaricp.connections.idle',
-    'hikaricp.connections.pending',
-    'hikaricp.connections',
-    'hikaricp.connections.active',
-    'hikaricp.connections.creation' ,
-    'hikaricp.connections.max',
-    'hikaricp.connections.min',
-    'hikaricp.connections.usage',
-    'hikaricp.connections.timeout',
-    'hikaricp.connections.acquire'
+            'jdbc.connections.active',
+            'jdbc.connections.max',
+            'jdbc.connections.min',
+            'jdbc.connections.pending',
+            'jdbc.connections.total',
+            'jdbc.connections.usage'
     ]
 
 }

@@ -16,7 +16,6 @@
 
 package io.micronaut.configuration.metrics.binder.datasource;
 
-import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micronaut.configuration.metrics.annotation.RequiresMetrics;
 import io.micronaut.context.annotation.EachBean;
@@ -40,12 +39,6 @@ import static io.micronaut.configuration.metrics.micrometer.MeterRegistryFactory
 @RequiresMetrics
 @Requires(property = MICRONAUT_METRICS_BINDERS + ".jdbc.enabled", value = "true", defaultValue = "true")
 public class DataSourcePoolMetricsBinderFactory {
-
-    private MeterRegistry meterRegistry;
-
-    public DataSourcePoolMetricsBinderFactory(MeterRegistry meterRegistry) {
-        this.meterRegistry = meterRegistry;
-    }
 
     /**
      * Method to wire beans for each type of datasource.

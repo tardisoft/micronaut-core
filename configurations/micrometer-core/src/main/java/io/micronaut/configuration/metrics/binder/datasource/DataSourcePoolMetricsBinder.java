@@ -21,6 +21,7 @@ import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micronaut.jdbc.metadata.DataSourcePoolMetadata;
+import io.micronaut.jdbc.metadata.VerboseDataSourcePoolMetadata;
 
 import javax.sql.DataSource;
 import javax.validation.constraints.NotNull;
@@ -38,35 +39,43 @@ public class DataSourcePoolMetricsBinder implements MeterBinder {
 
     private final DataSource dataSource;
 
-    private final DataSourcePoolMetadata metadataProvider;
+    private final DataSourcePoolMetadata metadata;
 
     private final Iterable<Tag> tags;
 
     /**
      * Constructor for creaging data source pool metrics.
      *
-     * @param dataSource       The datasource to bind metrics for
-     * @param metadataProvider A composite object of all the metadataProviders
-     * @param dataSourceName   The name of the datasource
-     * @param tags             Any k:v pairs to add as tags
+     * @param dataSource     The datasource to bind metrics for
+     * @param metadata       A metadata object that has ability to call pool stats {@link DataSourcePoolMetadata}
+     * @param dataSourceName The name of the datasource
+     * @param tags           Any k:v pairs to add as tags
      */
     DataSourcePoolMetricsBinder(DataSource dataSource,
-                                DataSourcePoolMetadata metadataProvider,
+                                DataSourcePoolMetadata metadata,
                                 String dataSourceName,
                                 Iterable<Tag> tags) {
         this.dataSource = dataSource;
-        this.metadataProvider = metadataProvider;
-        this.tags = Tags.concat(tags, "name", dataSourceName);
+        this.metadata = metadata;
+        if (this.metadata instanceof VerboseDataSourcePoolMetadata) {
+            this.tags = Tags.concat(tags, "name", dataSourceName, "pool", ((VerboseDataSourcePoolMetadata) this.metadata).getPoolName());
+        } else {
+            this.tags = Tags.concat(tags, "name", dataSourceName);
+        }
     }
 
     /**
-     * Method for getting metadataProvider object for datasource that will bind the pool metrics.
+     * Method for getting metadata object for datasource that will bind the pool metrics.
      *
      * @param meterRegistry the meter registry object
      */
     @Override
     public void bindTo(@NotNull MeterRegistry meterRegistry) {
-        if (this.metadataProvider != null) {
+        if (this.metadata != null) {
+            if (this.metadata instanceof VerboseDataSourcePoolMetadata) {
+                bindPoolMetadata(meterRegistry, "total", dataSourcePoolMetadata -> ((VerboseDataSourcePoolMetadata) dataSourcePoolMetadata).getTotal());
+                bindPoolMetadata(meterRegistry, "pending", dataSourcePoolMetadata -> ((VerboseDataSourcePoolMetadata) dataSourcePoolMetadata).getPending());
+            }
             bindPoolMetadata(meterRegistry, "active", DataSourcePoolMetadata::getActive);
             bindPoolMetadata(meterRegistry, "max", DataSourcePoolMetadata::getMax);
             bindPoolMetadata(meterRegistry, "min", DataSourcePoolMetadata::getMin);
@@ -84,7 +93,7 @@ public class DataSourcePoolMetricsBinder implements MeterBinder {
 
     private <N extends Number> Function<DataSource, N> getValueFunction(
             Function<DataSourcePoolMetadata, N> function) {
-        return dataSource -> function.apply(this.metadataProvider);
+        return dataSource -> function.apply(this.metadata);
     }
 
     /**

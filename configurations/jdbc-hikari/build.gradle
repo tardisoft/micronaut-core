@@ -3,7 +3,6 @@ dependencies {
     compile project(":inject")
     compile "com.zaxxer:HikariCP:2.7.9"
 
-    compileOnly project(":configurations:micrometer-core")
     compileOnly project(":inject-java")
     compileOnly dependencyModuleVersion("spring", "spring-jdbc")
 
